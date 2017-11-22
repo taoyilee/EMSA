@@ -6,3 +6,9 @@ class TimeSample:
     def __init__(self, t, y):
         self.t  = t
         self.y = y
+
+    def setPeak(self):
+        self.peak = True
+
+    def setValley(self):
+        self.valley = True

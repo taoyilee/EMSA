@@ -1,5 +1,7 @@
 import matplotlib
-from . import TimeSeries
+from .TimeSeries import TimeSeries
+from .TimeSample import TimeSample
+
 from .FilterToolbox import FilterToolbox
 import numpy as np
 import matplotlib.pyplot as plt
@@ -17,3 +19,11 @@ class EMSA:
         ts.resample()
         ts.zeroMean()
         self.flt.filter(ts)
+        self.labelPeakValley(ts)
+
+    def labelPeakValley(self, ts : TimeSeries, **kwargs):
+        search_order = kwargs.get('search_order', 5)
+        peaks_idx = np.array(signal.argrelmax(ts.ys, order=search_order))[0]
+        ts.setPeak(peaks_idx)
+        valleys_idx = np.array(signal.argrelmin(ts.ys, order=search_order))[0]
+        ts.setValley(valleys_idx)

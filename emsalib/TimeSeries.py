@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 from scipy import signal, interpolate, fftpack
 
 class TimeSeries:
-    y = []
-    ts = []
-    ys = []
+    y : TimeSample = []
+    ts = np.array([])
+    ys = np.array([])
 
     def __init__(self, **kwargs):
-        self.ts = kwargs.get('ts',[])
-        self.ys = kwargs.get('ys',[])
+        self.ts = np.array(kwargs.get('ts',[]))
+        self.ys = np.array(kwargs.get('ys',[]))
         self.convertRaw()
 
     def zeroMean(self):
@@ -22,16 +22,6 @@ class TimeSeries:
         self.y = []
         for i in range(len(self.ts)):
             self.y.append(TimeSample(self.ts[i], self.ys[i]))
-
-    def labelPeakValley(self):
-        search_order = 5
-        peaks_idx = np.array(signal.argrelmax(self.ys, order=search_order))
-        valleys_idx = np.array(signal.argrelmin(self.ys, order=search_order))
-
-        peaks_t = self.ts[peaks_idx]
-        valleys_t = self.ts[valleys_idx]
-        peaks = self.ys[peaks_idx]
-        valleys = self.ys[valleys_idx]
 
     def resample(self):
         fs = 33
@@ -47,6 +37,11 @@ class TimeSeries:
 
     def plot(self, tstart=0, tend=None):
         plt.plot([yi.t for yi in self.y[tstart:tend]], [yi.y for yi in self.y[tstart:tend]])
+        for yi in self.y[tstart:tend]:
+            if yi.peak:
+                plt.plot(yi.t, yi.y, 'ro', ms=5)
+            if yi.valley:
+                plt.plot(yi.t, yi.y, 'go', ms=5)
         plt.grid()
 
     def genRandom(self, length):
@@ -56,3 +51,11 @@ class TimeSeries:
 
     def __str__(self):
         return str(self.ts[0:10]) + str(self.ys[0:10])
+
+    def setPeak(self, peak_idx):
+        for i in peak_idx:
+            self.y[i].setPeak()
+
+    def setValley(self, valley_idx):
+        for i in valley_idx:
+            self.y[i].setValley()
