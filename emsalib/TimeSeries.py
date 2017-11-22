@@ -1,5 +1,5 @@
 import matplotlib
-from . import TimeSample
+from .TimeSample import TimeSample
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal, interpolate, fftpack
@@ -9,9 +9,9 @@ class TimeSeries:
     ts = []
     ys = []
 
-    def __init__(self, ts, ys):
-        self.ts = ts
-        self.ys = ys
+    def __init__(self, **kwargs):
+        self.ts = kwargs.get('ts',[])
+        self.ys = kwargs.get('ys',[])
         self.convertRaw()
 
     def zeroMean(self):
@@ -21,13 +21,7 @@ class TimeSeries:
     def convertRaw(self):
         self.y = []
         for i in range(len(self.ts)):
-            self.y.append(TimeSample.TimeSample(self.ts[i], self.ys[i]))
-
-    def lpfMA(self, filterLen):
-        win = np.ones(filterLen)
-        ys_lpf = signal.convolve(self.ys, win, mode='same') / filterLen
-        self.ys = ys_lpf
-        self.convertRaw()
+            self.y.append(TimeSample(self.ts[i], self.ys[i]))
 
     def labelPeakValley(self):
         search_order = 5
@@ -54,3 +48,11 @@ class TimeSeries:
     def plot(self, tstart=0, tend=None):
         plt.plot([yi.t for yi in self.y[tstart:tend]], [yi.y for yi in self.y[tstart:tend]])
         plt.grid()
+
+    def genRandom(self, length):
+        self.ts = np.array(range(length))
+        self.ys = np.array(np.random.randn(length))
+        self.convertRaw()
+
+    def __str__(self):
+        return str(self.ts[0:10]) + str(self.ys[0:10])
