@@ -8,7 +8,6 @@ class TimeSeries:
     y : TimeSample = []
     ts = np.array([])
     ys = np.array([])
-
     def __init__(self, **kwargs):
         self.ts = np.array(kwargs.get('ts',[]))
         self.ys = np.array(kwargs.get('ys',[]))
@@ -35,13 +34,16 @@ class TimeSeries:
         self.ys = ys_new
         self.convertRaw()
 
-    def plot(self, tstart=0, tend=None):
-        plt.plot([yi.t for yi in self.y[tstart:tend]], [yi.y for yi in self.y[tstart:tend]])
+    def plot(self, tstart=0, tend=None, t0=0):
+
+        plt.plot([yi.t + t0 for yi in self.y[tstart:tend]], [yi.y for yi in self.y[tstart:tend]])
         for yi in self.y[tstart:tend]:
             if yi.peak:
-                plt.plot(yi.t, yi.y, 'ro', ms=5)
+                plt.plot(yi.t + t0, yi.y, 'ro', ms=5)
             if yi.valley:
-                plt.plot(yi.t, yi.y, 'go', ms=5)
+                plt.plot(yi.t + t0, yi.y, 'go', ms=5)
+        plt.xlabel('Time (s)')
+        plt.ylabel('Acceleration (G)')
         plt.grid()
 
     def genRandom(self, length):
@@ -51,6 +53,22 @@ class TimeSeries:
 
     def __str__(self):
         return str(self.ts[0:10]) + str(self.ys[0:10])
+
+    def getPeaks(self):
+        idx = []
+        for i in range(len(self.y)):
+            if self.y[i].peak:
+                idx.append(i)
+
+        return idx
+
+    def getValleys(self):
+        idx = []
+        for i in range(len(self.y)):
+            if self.y[i].valley:
+                idx.append(i)
+
+        return idx
 
     def setPeak(self, peak_idx):
         for i in peak_idx:
