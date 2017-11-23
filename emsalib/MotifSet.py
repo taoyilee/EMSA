@@ -16,12 +16,12 @@ class MotifSet:
     def elasticRecale(self):
         aligned_motifs = []
         pts = 50
-        synthT = range(2*pts)
+        synthT = list(range(2*pts))
 
         for m in self.motifs:
-            submotif0 = m.subMotif(start=0, stop=m.findIdx(m.getFirstValley()))
+            submotif0 = m.subseq(start=0, stop=m.findIdx(m.getFirstValley()))
             submotif0.mapSynthT(synthT[0:pts])
-            submotif1 = m.subMotif(start=m.findIdx(m.getFirstValley()))
+            submotif1 = m.subseq(start=m.findIdx(m.getFirstValley()))
             submotif1.mapSynthT(synthT[pts:])
             submotif0.concat(submotif1)
             aligned_motifs.append(submotif0)
@@ -32,9 +32,9 @@ class MotifSet:
             m.plot()
 
     def plotMean(self):
-        meanMotif = [m.getMean() for m in self.motifs]
+        meanMotif = [m.mean() for m in self.motifs]
         plt.hist(meanMotif)
 
     def plotVar(self):
-        varMotif = [m.getVar() for m in self.motifs]
+        varMotif = [m.var() for m in self.motifs]
         plt.hist(varMotif)

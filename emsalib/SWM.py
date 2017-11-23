@@ -6,7 +6,7 @@ import numpy as np
 from scipy import signal
 
 
-class EMSA:
+class SWM:
     flt = None
     filterLen = 5
     searchOrd = 5
@@ -27,9 +27,9 @@ class EMSA:
 
 
     def labelPeakValley(self, ts : TimeSeries):
-        peaks_idx = np.array(signal.argrelmax(ts.ys(), order=self.searchOrd))[0]
+        peaks_idx = np.array(signal.argrelmax(ts.ys, order=self.searchOrd))[0]
         ts.setPeak(peaks_idx)
-        valleys_idx = np.array(signal.argrelmin(ts.ys(), order=self.searchOrd))[0]
+        valleys_idx = np.array(signal.argrelmin(ts.ys, order=self.searchOrd))[0]
         ts.setValley(valleys_idx)
 
     def MotifByPeaks(self, ts: TimeSeries):
@@ -41,11 +41,11 @@ class EMSA:
             # dirty hack to remove unwanted motifs
             if m.getFirstPeak().y < 0.3:
                 continue
-            if abs(m.var()) < 0.1:
+            if abs(m.getVar()) < 0.1:
                 continue
-            if abs(m.mean()) > 0.15:
+            if abs(m.getMean()) > 0.15:
                 continue
-            if abs(m.var()) > 0.35:
+            if abs(m.getVar()) > 0.35:
                 continue
             motifs.append(m)
             

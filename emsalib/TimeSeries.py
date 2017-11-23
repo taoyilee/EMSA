@@ -1,58 +1,26 @@
-import matplotlib
+from emsalib.Signal import Signal
 from .TimeSample import TimeSample
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy import signal, interpolate, fftpack
 
-class TimeSeries:
-    y : TimeSample = []
-    ts = np.array([])
-    ys = np.array([])
-    def __init__(self, **kwargs):
-        self.ts = np.array(kwargs.get('ts',[]))
-        self.ys = np.array(kwargs.get('ys',[]))
-        self.convertRaw()
 
-    def zeroMean(self):
-        self.ys = self.ys - np.mean(self.ys)
-        self.convertRaw()
+class TimeSeries(Signal):
 
-    def convertRaw(self):
-        self.y = []
-        for i in range(len(self.ts)):
-            self.y.append(TimeSample(self.ts[i], self.ys[i]))
+    def __init__(self, ts=[], ys=[], **kwargs):
+        ts = np.array(ts)
+        ys = np.array(ys)
+        y = [TimeSample(t, y) for t, y in zip(ts, ys)]
+        super().__init__(y)
 
-    def resample(self):
-        fs = 33
-        ps = 1 / fs
-        n = np.int16(8192)
-        freq = np.linspace(0, fs / 2, num=int(n // 2))
-        ts_new = np.arange(min(self.ts), max(self.ts), ps)
-        ys_interpolant = interpolate.interp1d(self.ts, self.ys)
-        ys_new = ys_interpolant(ts_new)
-        self.ts = ts_new
-        self.ys = ys_new
-        self.convertRaw()
-
-    def plot(self, tstart=0, tend=None, t0=0):
-
-        plt.plot([yi.t + t0 for yi in self.y[tstart:tend]], [yi.y for yi in self.y[tstart:tend]])
-        for yi in self.y[tstart:tend]:
-            if yi.peak:
-                plt.plot(yi.t + t0, yi.y, 'ro', ms=5)
-            if yi.valley:
-                plt.plot(yi.t + t0, yi.y, 'go', ms=5)
-        plt.xlabel('Time (s)')
-        plt.ylabel('Acceleration (G)')
-        plt.grid()
+    def updateys(self, ysUpdate):
+        self.y = [TimeSample(t, y) for t, y in zip(self.ts(), ysUpdate)]
 
     def genRandom(self, length):
-        self.ts = np.array(range(length))
-        self.ys = np.array(np.random.randn(length))
-        self.convertRaw()
+        ts = np.array(range(length))
+        ys = np.array(np.random.randn(length))
+        self.y = [TimeSample(t, y) for t, y in zip(ts, ys)]
 
     def __str__(self):
-        return str(self.ts[0:10]) + str(self.ys[0:10])
+        return str(self.ts()[0:10]) + str(self.ys()[0:10])
 
     def getPeaks(self):
         idx = []

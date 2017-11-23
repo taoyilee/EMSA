@@ -11,5 +11,4 @@ class FilterMovingAvg:
 
     def filter(self, ts):
         win = np.ones(self.filterLen)
-        ts.ys = np.array(signal.convolve(ts.ys, win, mode='same') / self.filterLen)
-        ts.convertRaw()
+        ts.updateys(np.array(signal.convolve(ts.ys(), win, mode='same') / self.filterLen))
