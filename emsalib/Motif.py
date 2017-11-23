@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from .TimeSample import TimeSample
 import numpy as np
+from scipy import interpolate
 
 
 class Motif:
@@ -35,6 +36,29 @@ class Motif:
             if yi.peak:
                 return yi
         return None
+
+    def mapSynthT(self, synthT):
+        tscale = (max(synthT)-min(synthT))/max([yi.t for yi in self.y])
+        y_interpolant = interpolate.interp1d([min(synthT)+ yi.t*tscale for yi in self.y], [yi.y for yi in self.y])
+        y_new = y_interpolant(synthT)
+        self.y = []
+        for t, y in zip(synthT, y_new):
+            self.y.append(TimeSample(t, y))
+
+    def concat(self, motif):
+        self.y = self.y +  motif.y
+
+    def getFirstValley(self):
+        for yi in self.y:
+            if yi.valley:
+                return yi
+        return None
+
+    def findIdx(self, ycandidate):
+        return self.y.index(ycandidate)
+
+    def subMotif(self, start=0, stop=None):
+        return Motif(self.y[start:stop])
 
     def getMean(self):
         return np.mean([yi.y for yi in self.y])

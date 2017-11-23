@@ -22,7 +22,7 @@ class EMSA:
         self.flt.filter(ts)
         self.labelPeakValley(ts)
         motifs =  self.MotifByPeaks(ts)
-        motifs.ElasticRecale()
+        motifs.elasticRecale()
         return motifs
 
 
