@@ -1,5 +1,6 @@
 from .TimeSeries import TimeSeries
 from .Motif import Motif
+from .MotifSet import MotifSet
 from .FilterToolbox import FilterToolbox
 import numpy as np
 from scipy import signal
@@ -20,7 +21,9 @@ class EMSA:
         ts.zeroMean()
         self.flt.filter(ts)
         self.labelPeakValley(ts)
-        return self.MotifByPeaks(ts)
+        motifs =  self.MotifByPeaks(ts)
+        motifs.ElasticRecale()
+        return motifs
 
 
     def labelPeakValley(self, ts : TimeSeries):
@@ -32,6 +35,7 @@ class EMSA:
     def MotifByPeaks(self, ts: TimeSeries):
         motifs = []
         peak_idx = ts.getPeaks()
+        motifs = MotifSet()
         for i in range(len(peak_idx)-1):
             m = Motif(ts.y[peak_idx[i]:peak_idx[i + 1]])
             # dirty hack to remove unwanted motifs
@@ -46,3 +50,4 @@ class EMSA:
             motifs.append(m)
             
         return motifs
+
