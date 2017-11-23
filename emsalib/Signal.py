@@ -2,24 +2,24 @@ import matplotlib.pyplot as plt
 from .TimeSample import TimeSample
 import numpy as np
 from scipy import interpolate
+import copy
 
 class Signal:
     y = []
 
     def __init__(self, y):
-        self.y = []
-        for yi in y:
-            self.y.append(TimeSample(yi.t, yi.y))
-            if yi.peak:
-                self.y[-1].setPeak()
-            if yi.valley:
-                self.y[-1].setValley()
+        self.y = copy.deepcopy(y)
         self.alignX0()
 
+    def updateys(self, ysUpdate):
+        self.y = [TimeSample(t, y) for t, y in zip(self.ts(), ysUpdate)]
+
+    def updatets(self, tsUpdate):
+        for yi, ti in zip(self.y, tsUpdate):
+            yi.t = ti
+
     def alignX0(self):
-        x0 = self.y[0].t
-        for yi in self.y:
-            yi.t = yi.t - x0
+        self.updatets(self.ts() - min(self.ts()))
 
     def plot(self, tstart=0, tend=None, tshift=0):
         plt.plot([yi.t + tshift for yi in self.y[tstart:tend]], [yi.y for yi in self.y[tstart:tend]])
@@ -30,13 +30,12 @@ class Signal:
                 plt.plot(yi.t + tshift, yi.y, 'go', ms=3)
 
     def mapSynthT(self, synthT):
-        tscale = (max(synthT)-min(synthT))/(max(self.ts())-min(self.ts()))
-        scaledTorig = (self.ts() - min(self.ts()))*tscale + min(synthT)
+        self.alignX0()
+        tscale = (max(synthT)-min(synthT))/max(self.ts())
+        scaledTorig = self.ts()*tscale + min(synthT)
         y_interpolant = interpolate.interp1d(scaledTorig, self.ys(), bounds_error=False, fill_value="extrapolate")
         y_new = y_interpolant(synthT)
-        self.y = []
-        for t, y in zip(synthT, y_new):
-            self.y.append(TimeSample(t, y))
+        self.y = [TimeSample(t, y) for t, y in zip(synthT, y_new)]
 
     def concat(self, motif):
         self.y = self.y +  motif.y

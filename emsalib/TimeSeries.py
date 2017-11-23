@@ -1,5 +1,7 @@
 from emsalib.Signal import Signal
+from .Motif import Motif
 from .TimeSample import TimeSample
+
 import numpy as np
 
 
@@ -10,9 +12,6 @@ class TimeSeries(Signal):
         ys = np.array(ys)
         y = [TimeSample(t, y) for t, y in zip(ts, ys)]
         super().__init__(y)
-
-    def updateys(self, ysUpdate):
-        self.y = [TimeSample(t, y) for t, y in zip(self.ts(), ysUpdate)]
 
     def genRandom(self, length):
         ts = np.array(range(length))
@@ -45,3 +44,6 @@ class TimeSeries(Signal):
     def setValley(self, valley_idx):
         for i in valley_idx:
             self.y[i].setValley()
+
+    def motif(self, start=0, stop=None):
+        return Motif(self.y[start:stop])

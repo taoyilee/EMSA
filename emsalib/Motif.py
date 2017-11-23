@@ -17,3 +17,6 @@ class Motif(Signal):
             if yi.valley:
                 return yi
         return None
+
+    def subseq(self, start=0, stop=None):
+        return Motif(self.y[start:stop])
