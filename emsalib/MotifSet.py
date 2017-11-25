@@ -7,7 +7,7 @@ class MotifSet:
     motifs = []
 
     def __init__(self) :
-        pass
+        self.motifs = []
 
     def append(self, motif):
         self.motifs.append(motif)
@@ -40,3 +40,6 @@ class MotifSet:
     def plotVar(self):
         varMotif = [m.var() for m in self.motifs]
         plt.hist(varMotif)
+
+    def __len__(self):
+        return len(self.motifs)

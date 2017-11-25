@@ -7,11 +7,11 @@ import numpy as np
 
 class TimeSeries(Signal):
 
-    def __init__(self, ts=[], ys=[], **kwargs):
+    def __init__(self, ts=[], ys=[], leftalign=True, offset=0, **kwargs):
         ts = np.array(ts)
         ys = np.array(ys)
         y = [TimeSample(t, y) for t, y in zip(ts, ys)]
-        super().__init__(y)
+        super().__init__(y, leftalign, offset)
 
     def genRandom(self, length):
         ts = np.array(range(length))
@@ -47,3 +47,6 @@ class TimeSeries(Signal):
 
     def motif(self, start=0, stop=None):
         return Motif(self.y[start:stop])
+
+    def subseq(self, start=0, stop=None, leftalign=True, offset=0):
+        return TimeSeries( ts=self.ts(start,stop), ys=self.ys(start,stop), leftalign=leftalign, offset=offset)
