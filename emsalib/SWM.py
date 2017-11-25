@@ -23,7 +23,7 @@ class SWM:
         self.searchRange = searchRange
         self.flt = FilterToolbox( type=flt_type, filterLen=self.filterLen )
 
-    def process(self, ts: TimeSeries):
+    def processVerbose(self, ts: TimeSeries):
         ts.resample()
         ts.zeroMean()
         self.flt.filter( ts )
@@ -35,6 +35,44 @@ class SWM:
 
         for curLen in range( self.minLen, self.maxLen ):
             print( "Total length {} / {} = {}".format( len( ts ), curLen, len( ts ) // curLen ) )
+            for i in range( len( ts ) // curLen ):
+                tsTemplate = ts.subseq( start=i * curLen, stop=i * curLen + curLen )
+                if i == 0:
+                    tsSeg1 = ts.subseq( start=i * curLen + curLen, leftalign=True, offset=-tsTemplate.duration() )
+                else:
+                    tsSeg1 = ts.subseq( start=0, stop=i * curLen )
+                    tsSeg2 = ts.subseq( start=i * curLen + curLen, leftalign=False, offset=-tsTemplate.duration() )
+                    tsSeg1.concat( tsSeg2 )
+                (motifsi, meanErri, droppedPtsi, distListi) = self.searchByTemplate( tsSeg1, tsTemplate )
+                fom_cur = len( motifsi ) / (meanErri * droppedPtsi)
+                if fom_cur > fom:
+                    fom = fom_cur
+                    motifs = motifsi
+                    meanErr = meanErri
+                    droppedPts = droppedPtsi
+                    distList = distListi
+                    print(
+                        "(Pocket Updated {:.3f}) Found {} motifs, mean Dist = {:.4f}, dropped {} points in original TS".format(
+                            fom, len( motifs ), meanErr,
+                            droppedPts ) )
+                else:
+                    print(
+                        "Found {} motifs, mean Dist = {:.4f}, dropped {} points in original TS".format( len( motifs ),
+                                                                                                        meanErr,
+                                                                                                        droppedPts ) )
+        return motifs, meanErr, droppedPts, distList
+
+    def process(self, ts: TimeSeries):
+        ts.resample()
+        ts.zeroMean()
+        self.flt.filter( ts )
+        fom = -1
+        motifs = []
+        meanErr = []
+        droppedPts = []
+        distList = []
+
+        for curLen in range( self.minLen, self.maxLen ):
             for i in range( len( ts ) // curLen ):
                 tsTemplate = ts.subseq( start=i * curLen, stop=i * curLen + curLen )
                 if i==0:
@@ -51,12 +89,7 @@ class SWM:
                     meanErr = meanErri
                     droppedPts = droppedPtsi
                     distList = distListi
-                    print( "(Pocket Updated {:.3f}) Found {} motifs, mean Dist = {:.4f}, dropped {} points in original TS".format(fom, len( motifs ), meanErr,
-                                                                                                               droppedPts ) )
-                else:
-                    print( "Found {} motifs, mean Dist = {:.4f}, dropped {} points in original TS".format( len( motifs ),
-                                                                                                       meanErr,
-                                                                                                       droppedPts ) )
+
         return motifs, meanErr, droppedPts, distList
 
     def searchByTemplate(self, ts, tsTemplate):
