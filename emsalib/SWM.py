@@ -1,53 +1,88 @@
 from .TimeSeries import TimeSeries
-from .Motif import Motif
 from .MotifSet import MotifSet
 from .FilterToolbox import FilterToolbox
+import matplotlib.pyplot as plt
 import numpy as np
-from scipy import signal
 
 
 class SWM:
     flt = None
     filterLen = 5
-    searchOrd = 5
+    searchOrd = 15
+    distThres = 5
+    minLen = 40
+    maxLen = 150
+    searchRange = 10
 
-    def __init__(self, flt_type='ma', **kwargs):
-        self.filterLen = kwargs.get('filterLen', 5)
-        self.searchOrd = kwargs.get('searchOrd', 5)
-        self.flt = FilterToolbox(type=flt_type,filterLen=self.filterLen)
+    def __init__(self, flt_type='ma', distThres=0.075, minLen=50, maxLen=51, searchRange=10, searchOrd=15, filterLen=5):
+        self.filterLen = filterLen
+        self.searchOrd = searchOrd
+        self.distThres = distThres
+        self.minLen = minLen
+        self.maxLen = maxLen
+        self.searchRange = searchRange
+        self.flt = FilterToolbox( type=flt_type, filterLen=self.filterLen )
 
-    def process(self, ts : TimeSeries ):
+    def process(self, ts: TimeSeries):
         ts.resample()
         ts.zeroMean()
-        self.flt.filter(ts)
-        self.labelPeakValley(ts)
-        motifs =  self.MotifByPeaks(ts)
-        motifs.elasticRecale()
-        return motifs
-
-
-    def labelPeakValley(self, ts : TimeSeries):
-        peaks_idx = np.array(signal.argrelmax(ts.ys, order=self.searchOrd))[0]
-        ts.setPeak(peaks_idx)
-        valleys_idx = np.array(signal.argrelmin(ts.ys, order=self.searchOrd))[0]
-        ts.setValley(valleys_idx)
-
-    def MotifByPeaks(self, ts: TimeSeries):
+        self.flt.filter( ts )
+        fom = -1
         motifs = []
-        peak_idx = ts.getPeaks()
-        motifs = MotifSet()
-        for i in range(len(peak_idx)-1):
-            m = Motif(ts.y[peak_idx[i]:peak_idx[i + 1]])
-            # dirty hack to remove unwanted motifs
-            if m.getFirstPeak().y < 0.3:
-                continue
-            if abs(m.getVar()) < 0.1:
-                continue
-            if abs(m.getMean()) > 0.15:
-                continue
-            if abs(m.getVar()) > 0.35:
-                continue
-            motifs.append(m)
-            
-        return motifs
+        meanErr = []
+        droppedPts = []
+        distList = []
 
+        for curLen in range( self.minLen, self.maxLen ):
+            print( "Total length {} / {} = {}".format( len( ts ), curLen, len( ts ) // curLen ) )
+            for i in range( len( ts ) // curLen ):
+                tsTemplate = ts.subseq( start=i * curLen, stop=i * curLen + curLen )
+                if i==0:
+                    tsSeg1 = ts.subseq( start=i * curLen + curLen, leftalign=True, offset=-tsTemplate.duration())
+                else:
+                    tsSeg1 = ts.subseq( start=0, stop=i * curLen )
+                    tsSeg2 = ts.subseq( start=i * curLen + curLen, leftalign=False, offset=-tsTemplate.duration() )
+                    tsSeg1.concat( tsSeg2 )
+                (motifsi, meanErri, droppedPtsi, distListi) = self.searchByTemplate( tsSeg1, tsTemplate )
+                fom_cur = len(motifsi)/(meanErri*droppedPtsi)
+                if fom_cur > fom:
+                    fom = fom_cur
+                    motifs = motifsi
+                    meanErr = meanErri
+                    droppedPts = droppedPtsi
+                    distList = distListi
+                    print( "(Pocket Updated {:.3f}) Found {} motifs, mean Dist = {:.4f}, dropped {} points in original TS".format(fom, len( motifs ), meanErr,
+                                                                                                               droppedPts ) )
+                else:
+                    print( "Found {} motifs, mean Dist = {:.4f}, dropped {} points in original TS".format( len( motifs ),
+                                                                                                       meanErr,
+                                                                                                       droppedPts ) )
+        return motifs, meanErr, droppedPts, distList
+
+    def searchByTemplate(self, ts, tsTemplate):
+        distList = []
+        templateLen = len( tsTemplate )
+        pts = int( len( tsTemplate ) * (100 + self.searchRange) / 100 )
+        tsTemplate.mapSynthT( range( pts ) )
+        motifs = MotifSet()
+        motifs.append( tsTemplate.motif() )
+        ErrList = []
+        droppedPts = 0
+        while len( ts ) > int( templateLen * (100 + self.searchRange) / 100 ) :
+            for candLen in range( int( templateLen * (100 - self.searchRange) / 100 ),
+                                  int( templateLen * (100 + self.searchRange) / 100 ) ):
+                tsCandidate = ts.subseq( start=0, stop=candLen )
+                tsCandidate.mapSynthT( range( pts ) )
+                dist = tsTemplate.euclideanDist( tsCandidate )
+                distList.append( dist )
+                if dist < self.distThres:
+                    ErrList.append(dist)
+                    m = tsCandidate.motif()
+                    motifs.append( m )
+                    ts = ts.subseq( start=candLen )
+                    break
+            ts = ts.subseq( start=1 )
+            droppedPts +=1
+
+        meanErr = np.mean(ErrList)
+        return (motifs, meanErr, droppedPts, distList)
